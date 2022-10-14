@@ -52,17 +52,21 @@ void calculateMinAndMaxDistances(const std::vector<geometry_msgs::Point>& footpr
   {
     // check the distance from the robot center point to the first vertex
     double vertex_dist = distance(0.0, 0.0, footprint[i].x, footprint[i].y);
+    double vertex_dist_y = distance(footprint[i].x, 0.0, footprint[i].x, footprint[i].y);
     double edge_dist = distanceToLine(0.0, 0.0, footprint[i].x, footprint[i].y,
                                       footprint[i + 1].x, footprint[i + 1].y);
-    min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
+    // min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
+    min_dist = std::max(min_dist, vertex_dist_y);
     max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
   }
 
   // we also need to do the last vertex and the first vertex
   double vertex_dist = distance(0.0, 0.0, footprint.back().x, footprint.back().y);
+  double vertex_dist_y = distance(footprint.back().x, 0.0, footprint.back().x, footprint.back().y);
   double edge_dist = distanceToLine(0.0, 0.0, footprint.back().x, footprint.back().y,
                                       footprint.front().x, footprint.front().y);
-  min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
+  // min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
+  min_dist = std::max(min_dist, vertex_dist_y);
   max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
 }
 
