@@ -849,6 +849,20 @@ namespace move_base {
       lock.unlock();
       ROS_DEBUG_NAMED("move_base","pointers swapped!");
 
+      geometry_msgs::PoseStamped base_pose, offset_pose;
+      geometry_msgs::Pose plan_pose;
+      tf2::toMsg(tf2::Transform::getIdentity(), offset_pose.pose);
+      tf2::toMsg(tf2::Transform::getIdentity(), base_pose.pose);
+      base_pose.header.frame_id = "base_footprint";
+      base_pose.header.stamp = ros::Time();
+      tf_.transform(base_pose, offset_pose, robot_base_frame_);
+      for(unsigned int i = 0; i < controller_plan_->size(); i++){
+        plan_pose = controller_plan_->at(i).pose;
+        controller_plan_->at(i).pose.position.x = plan_pose.position.x + offset_pose.pose.position.x;
+        controller_plan_->at(i).pose.position.y = plan_pose.position.y + offset_pose.pose.position.y;
+	controller_plan_->at(i).pose.position.z = plan_pose.position.z + offset_pose.pose.position.z;
+      }
+
       if(!tc_->setPlan(*controller_plan_)){
         //ABORT and SHUTDOWN COSTMAPS
         ROS_ERROR("Failed to pass global plan to the controller, aborting.");

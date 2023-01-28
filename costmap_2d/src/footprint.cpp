@@ -42,7 +42,8 @@ void calculateMinAndMaxDistances(const std::vector<geometry_msgs::Point>& footpr
 {
   min_dist = std::numeric_limits<double>::max();
   max_dist = 0.0;
-  double max_y_dist = 0.0;
+  double max_y_ = 0.0;
+  double min_y_ = 0.0;
 
   if (footprint.size() <= 2)
   {
@@ -57,7 +58,8 @@ void calculateMinAndMaxDistances(const std::vector<geometry_msgs::Point>& footpr
                                       footprint[i + 1].x, footprint[i + 1].y);
     min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
     max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
-    max_y_dist = std::max(max_y_dist, std::abs(footprint[i].y));
+    max_y_ = std::max(max_y_, footprint[i].y);
+    min_y_ = std::min(min_y_, footprint[i].y);
   }
 
   // we also need to do the last vertex and the first vertex
@@ -66,8 +68,9 @@ void calculateMinAndMaxDistances(const std::vector<geometry_msgs::Point>& footpr
                                       footprint.front().x, footprint.front().y);
   min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
   max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
-  max_y_dist = std::max(max_y_dist, std::abs(footprint.back().y));
-  min_dist = max_y_dist;
+  max_y_ = std::max(max_y_, footprint.back().y);
+  min_y_ = std::min(min_y_, footprint.back().y);
+  min_dist = (max_y_-min_y_)/2.0;
 }
 
 geometry_msgs::Point32 toPoint32(geometry_msgs::Point pt)
