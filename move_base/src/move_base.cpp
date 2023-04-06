@@ -680,7 +680,6 @@ namespace move_base {
     last_valid_plan_ = ros::Time::now();
     last_oscillation_reset_ = ros::Time::now();
     planning_retries_ = 0;
-
     ros::NodeHandle n;
     while(n.ok())
     {
@@ -850,17 +849,41 @@ namespace move_base {
       ROS_DEBUG_NAMED("move_base","pointers swapped!");
 
       geometry_msgs::PoseStamped base_pose, offset_pose;
-      geometry_msgs::Pose plan_pose;
+      geometry_msgs::Pose plan_pose, next_plan_pose;
+      tf2::Transform plan_tf, next_plan_tf, difference_tf, target_tf;
       tf2::toMsg(tf2::Transform::getIdentity(), offset_pose.pose);
       tf2::toMsg(tf2::Transform::getIdentity(), base_pose.pose);
       base_pose.header.frame_id = "base_footprint";
       base_pose.header.stamp = ros::Time();
-      tf_.transform(base_pose, offset_pose, robot_base_frame_);
-      for(unsigned int i = 0; i < controller_plan_->size(); i++){
+      tf_.transform(base_pose, offset_pose, robot_base_frame_)
+      for(unsigned int i = 0; i < controller_plan_->size()-1; i++){
         plan_pose = controller_plan_->at(i).pose;
-        controller_plan_->at(i).pose.position.x = plan_pose.position.x + offset_pose.pose.position.x;
-        controller_plan_->at(i).pose.position.y = plan_pose.position.y + offset_pose.pose.position.y;
-	controller_plan_->at(i).pose.position.z = plan_pose.position.z + offset_pose.pose.position.z;
+        next_plan_pose = controller_plan_->at(i+1).pose;
+
+	plan_tf.setOrigin(tf2::Vector3(plan_pose.position.x, 
+				       plan_pose.position.y,
+				       plan_pose.position.z));
+	plan_tf.setRotation(tf2::Quaternion(plan_pose.orientation.x, 
+					    plan_pose.orientation.y, 
+					    plan_pose.orientation.z,
+					    plan_pose.orientation.w));
+	next_plan_tf.setOrigin(tf2::Vector3(next_plan_pose.position.x, 
+					    next_plan_pose.position.y,
+					    next_plan_pose.position.z));
+	next_plan_tf.setRotation(tf2::Quaternion(next_plan_pose.orientation.x,
+						 next_plan_pose.orientation.y,
+						 next_plan_pose.orientation.z,
+						 next_plan_pose.orientation.w));
+
+	difference_tf.setRotation(plan_tf.inverseTimes(next_plan_tf).getRotation());
+	difference_tf.setOrigin(tf2::Vector3(offset_pose.pose.position.x,
+					     offset_pose.pose.position.y, 
+					     offset_pose.pose.position.z));	
+	target_tf = plan_tf * difference_tf;
+
+        controller_plan_->at(i).pose.position.x = target_tf.getOrigin().x();
+	controller_plan_->at(i).pose.position.y = target_tf.getOrigin().y(); 
+	controller_plan_->at(i).pose.position.z = target_tf.getOrigin().z();
       }
 
       if(!tc_->setPlan(*controller_plan_)){
